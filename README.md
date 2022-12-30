@@ -1,5 +1,7 @@
 # lcexoplanet
 
+[![formatting](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 ## Ligth Curves for Exoplanets
 
 **Documentation**: <a href="https://diegohs79.github.io/lcexoplanet">https://diegohs79.github.io/lcexoplanet</a>
