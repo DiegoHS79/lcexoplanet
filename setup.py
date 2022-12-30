@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="lcexoplanet",
-    version="0.1.0",
+    version="0.1.1",
     author="Diego Hidalgo Soto",
     author_email="diego.hidalgo@hotmail.es",
     description="Light Curves for Exoplanets",
