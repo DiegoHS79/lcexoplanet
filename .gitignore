@@ -130,9 +130,4 @@ dmypy.json
 
 
 ########## PERSONAL ##########
-# pipenv
-Pipfile
-Pipfile.lock
-
-#PyPi
-pypi_token.txt
+tfm
