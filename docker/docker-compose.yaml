@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  python-lc:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    image: python-lcexo
+    container_name: lcexoplanet
+    tty: true
+    stdin_open: true
+    ports:
+      - 9009:8888
+    volumes:
+      - ../src:/home/podium/code
