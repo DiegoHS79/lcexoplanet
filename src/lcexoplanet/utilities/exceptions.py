@@ -19,7 +19,7 @@ class MissionError(Exception):
 
 
 class IdLengthError(Exception):
-    len_mission = {"k2": 9}
+    len_mission = {"k2": 9, "kepler": 9}
 
     def __init__(self, mission: str, id_number: str, *args: object) -> None:
         super().__init__(*args)

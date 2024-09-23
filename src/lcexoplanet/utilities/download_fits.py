@@ -39,6 +39,7 @@ class SpaceMissionFitsDownload:
         self,
         mission: Literal["k2", "kepler", "tess"],
         id_number: str,
+        kepler_raw: Literal["lightcurves", "target_pixel_files"] = "lightcurves",
         to_path: str = Path("~/.lcexoplanet/fits"),
     ) -> None:
         """Download astronomy FITs file for multiple space missions.
@@ -46,6 +47,8 @@ class SpaceMissionFitsDownload:
         Args:
             mission (Literal[k2, kepler, tess]): Space mission available.
             id_number (str): ID number that characterize the object for a specific mission.
+            kepler_raw (Literal[lightcurves, target_pixel_files], optional): Kind of data to download.
+                Defaults to "lightcurves".
             to_path (str, optional): Path where to download the FIT file.
                 Defaults to ~/.lcexoplanet/fits.
 
@@ -58,10 +61,8 @@ class SpaceMissionFitsDownload:
         self.id_number = id_number
         if not isinstance(self.id_number, str):
             raise TypeError(f"{self.id_number} must be in string format.")
-
         self.to_path = Path(to_path, self.mission)
         print(self)
-        # logger.info(self)
 
         if self.mission == "k2":
             if len(self.id_number) != 9:
@@ -73,19 +74,37 @@ class SpaceMissionFitsDownload:
                 if campaign != "c8":
                     continue
 
+                path = Path(self.to_path, campaign).expanduser()
+
                 url = (
                     "http://archive.stsci.edu/missions/k2/lightcurves/"
                     f"{campaign}/{first_part}/{second_part}"
                 )
                 self.download_k2_fit(
-                    url,
-                    campaign,
-                    self.id_number,
-                    Path(self.to_path, campaign).expanduser(),
+                    url=url,
+                    campaign=campaign,
+                    id_number=self.id_number,
+                    path=path,
                 )
 
         elif self.mission == "kepler":
-            self.url = "http://archive.stsci.edu/missions/kepler/"
+            path = Path(self.to_path, self.id_number).expanduser()
+
+            if len(self.id_number) != 9:
+                raise IdLengthError(self.mission, self.id_number)
+
+            first_part = self.id_number[:4]
+
+            url = (
+                f"http://archive.stsci.edu/missions/kepler/{kepler_raw}/"
+                f"{first_part}/{self.id_number}"
+            )
+
+            self.download_kepler_fit(
+                url=url,
+                id_number=self.id_number,
+                path=path,
+            )
 
         elif self.mission == "tess":
             self.url = None
@@ -101,8 +120,13 @@ class SpaceMissionFitsDownload:
         return text
 
     @staticmethod
-    def download_k2_fit(url: str, campaign: str, id_number: str, path: str):
-        """Static method to download FITs file for K2 space mission.
+    def download_k2_fit(
+        url: str,
+        campaign: str,
+        id_number: str,
+        path: str,
+    ):
+        """Download FITs file for K2 space mission.
 
         Args:
             url (str): Base URL from where to download the FIT file.
@@ -110,9 +134,9 @@ class SpaceMissionFitsDownload:
             id_number (str): ID number that characterize the object for a specific mission.
             path (str): Path where to download the FIT file.
         """
-        print(path)
         if not path.exists():
             path.mkdir(parents=True, exist_ok=True)
+
         page = requests.get(url)
         if page.status_code == 200:
             print(
@@ -125,3 +149,35 @@ class SpaceMissionFitsDownload:
                     fit_name = f"ktwo{id_number}-{campaign}_llc.fits"
                     fit = requests.get(url + f"/{fit_name}")
                     open(Path(path, fit_name), "wb").write(fit.content)
+
+    @staticmethod
+    def download_kepler_fit(
+        url: str,
+        id_number: str,
+        path: str,
+        # TODO: merge with download_k2_fit
+    ):
+        """Download FITs file for Kepler space mission.
+
+        Args:
+            url (str): Base URL from where to download the FIT file.
+            id_number (str): ID number that characterize the object for a specific mission.
+            path (str): Path where to download the FIT file.
+        """
+        if not path.exists():
+            path.mkdir(parents=True, exist_ok=True)
+
+        page = requests.get(url)
+        if page.status_code == 200:
+            print(f" \u2937 object available: ")
+            soup = BeautifulSoup(page.content, "html.parser")
+            for a in soup.findAll("a"):
+                if id_number in a["href"]:
+                    print(
+                        f"\t\u2937 downloading \033[0;34;38m{a['href']}\033[0m into {path}"
+                    )
+                    fit_name = a["href"]
+                    if ".fits" in Path(fit_name).suffixes:
+                        fit = requests.get(url + f"/{fit_name}")
+                        open(Path(path, fit_name), "wb").write(fit.content)
+                    break
