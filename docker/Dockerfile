@@ -4,14 +4,12 @@ FROM python:3.13.0rc1-bullseye
 RUN apt-get update && apt-get install -y curl sudo
 
 # Añadir usuario y modificar permisos
-RUN useradd --create-home podium && \
-    chown -R podium /home/podium && \
-    usermod -aG sudo podium && \
-    find /usr/local/lib -type d -exec chmod 777 {} \; && \
-    find /usr/local/bin -type d -exec chmod 777 {} \;
+RUN useradd --create-home podium
+RUN chown -R podium:podium /home/podium
+RUN usermod -aG sudo podium
 
 # Copiar e instalar los requerimientos de Python
-WORKDIR home/podium/code
+WORKDIR /home/podium/code
 COPY ./requirements.txt .
 
 RUN pip install --upgrade pip
