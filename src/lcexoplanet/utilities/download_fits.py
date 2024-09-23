@@ -1,25 +1,53 @@
-import os
+import logging
+from pathlib import Path
 from typing import Literal
 
 import requests
 from bs4 import BeautifulSoup
 
-from lcexoplanet.exceptions import MissionError, IdLengthError
+from .exceptions import MissionError, IdLengthError
+
+logger = logging.getLogger(__name__)
 
 
 class SpaceMissionFitsDownload:
+    K2_CAMPAIGNS = [
+        "c0",
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "c5",
+        "c6",
+        "c7",
+        "c8",
+        "c9",
+        "c102",
+        "c111",
+        "c112",
+        "c12",
+        "c13",
+        "c14",
+        "c15",
+        "c16",
+        "c17",
+        "c18",
+        "c19",
+    ]
+
     def __init__(
         self,
         mission: Literal["k2", "kepler", "tess"],
         id_number: str,
-        to_path: str = os.path.join(os.path.expanduser("~"), ".lcexoplanet/fits"),
+        to_path: str = Path("~/.lcexoplanet/fits"),
     ) -> None:
-        """Class to download astronomy FITs file for multiple space missions.
+        """Download astronomy FITs file for multiple space missions.
 
         Args:
             mission (Literal[k2, kepler, tess]): Space mission available.
             id_number (str): ID number that characterize the object for a specific mission.
-            to_path (str, optional): Path where to download the FIT file. Defaults to ~/.lcexoplanet/fits.
+            to_path (str, optional): Path where to download the FIT file.
+                Defaults to ~/.lcexoplanet/fits.
 
         Raises:
             TypeError: Raises when Id number is not a string istance.
@@ -31,45 +59,29 @@ class SpaceMissionFitsDownload:
         if not isinstance(self.id_number, str):
             raise TypeError(f"{self.id_number} must be in string format.")
 
-        self.to_path = os.path.join(to_path, self.mission)
+        self.to_path = Path(to_path, self.mission)
         print(self)
+        # logger.info(self)
 
         if self.mission == "k2":
             if len(self.id_number) != 9:
                 raise IdLengthError(self.mission, self.id_number)
 
-            campaigns = [
-                "c0",
-                "c1",
-                "c2",
-                "c3",
-                "c4",
-                "c5",
-                "c6",
-                "c7",
-                "c8",
-                "c9",
-                "c102",
-                "c111",
-                "c112",
-                "c12",
-                "c13",
-                "c14",
-                "c15",
-                "c16",
-                "c17",
-                "c18",
-                "c19",
-            ]
             first_part = self.id_number[:4] + "00000"
             second_part = self.id_number[4:6] + "000"
-            for campaign in campaigns:
+            for campaign in self.K2_CAMPAIGNS:
                 if campaign != "c8":
                     continue
-                # file_name = f"ktwo{self.id_number}-{campaign}_llc.fits"
-                url = f"http://archive.stsci.edu/missions/k2/lightcurves/{campaign}/{first_part}/{second_part}"
+
+                url = (
+                    "http://archive.stsci.edu/missions/k2/lightcurves/"
+                    f"{campaign}/{first_part}/{second_part}"
+                )
                 self.download_k2_fit(
-                    url, campaign, self.id_number, os.path.join(self.to_path, campaign)
+                    url,
+                    campaign,
+                    self.id_number,
+                    Path(self.to_path, campaign).expanduser(),
                 )
 
         elif self.mission == "kepler":
@@ -82,7 +94,10 @@ class SpaceMissionFitsDownload:
             raise MissionError(self.mission)
 
     def __str__(self) -> str:
-        text = f"You have selected: \033[1;32;38m{self.id_number}\033[0m object from \033[1;32;38m{self.mission.upper()}\033[0m Space Mission"
+        text = (
+            f"You have selected: \033[1;32;38m{self.id_number}\033[0m "
+            f"object from \033[1;32;38m{self.mission.upper()}\033[0m Space Mission"
+        )
         return text
 
     @staticmethod
@@ -95,8 +110,9 @@ class SpaceMissionFitsDownload:
             id_number (str): ID number that characterize the object for a specific mission.
             path (str): Path where to download the FIT file.
         """
-        if not os.path.exists(path):
-            os.makedirs(path)
+        print(path)
+        if not path.exists():
+            path.mkdir(parents=True, exist_ok=True)
         page = requests.get(url)
         if page.status_code == 200:
             print(
@@ -108,11 +124,4 @@ class SpaceMissionFitsDownload:
                     print(f"downloading \033[0;34;38m{a['href']}\033[0m into {path}")
                     fit_name = f"ktwo{id_number}-{campaign}_llc.fits"
                     fit = requests.get(url + f"/{fit_name}")
-                    open(os.path.join(path, fit_name), "wb").write(fit.content)
-
-
-if __name__ == "__main__":
-    os.system("clear")
-    print("*" * 20)
-    down = SpaceMissionFitsDownload("k2", "220522664")
-    print("*" * 20)
+                    open(Path(path, fit_name), "wb").write(fit.content)
